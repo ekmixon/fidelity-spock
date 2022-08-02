@@ -218,8 +218,7 @@ class Handler(ABC):
             path: current path for the configuration file
 
         """
-        is_s3 = check_path_s3(path=path)
-        if is_s3:
+        if is_s3 := check_path_s3(path=path):
             try:
                 from spock.addons.s3.utils import handle_s3_load_path
 
@@ -334,8 +333,7 @@ class YAMLHandler(Handler):
 
         """
         file_contents = open(path, "r").read()
-        base_payload = yaml.safe_load(file_contents)
-        return base_payload
+        return yaml.safe_load(file_contents)
 
     def _save(
         self,
@@ -394,8 +392,7 @@ class TOMLHandler(Handler):
             base_payload: dictionary of read file
 
         """
-        base_payload = pytomlpp.load(path)
-        return base_payload
+        return pytomlpp.load(path)
 
     def _save(
         self,

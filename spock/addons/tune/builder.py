@@ -40,8 +40,9 @@ class TunerBuilder(BaseBuilder):
         """
         attr_name = class_obj.__name__
         group_parser = parser.add_argument_group(
-            title=str(attr_name) + " Specific Overrides"
+            title=f"{str(attr_name)} Specific Overrides"
         )
+
         for val in class_obj.__attrs_attrs__:
             val_type = val.metadata["type"] if "type" in val.metadata else val.type
             for arg in val_type.__attrs_attrs__:

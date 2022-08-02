@@ -105,7 +105,7 @@ class OptunaInterface(BaseInterface):
         for k, v in vars(self._tuner_namespace).items():
             for ik, iv in vars(v).items():
                 param_fn = self._map_type[type(iv).__name__][iv.type]
-                optuna_dict.update({f"{k}.{ik}": param_fn(iv)})
+                optuna_dict[f"{k}.{ik}"] = param_fn(iv)
         return optuna_dict
 
     def _uniform_float_dist(self, val):

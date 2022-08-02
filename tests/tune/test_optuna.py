@@ -24,8 +24,7 @@ class TestOptunaBasic(AllTypes):
             optuna_config = OptunaTunerConfig(
                 study_name="Basic Tests", direction="maximize"
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
 
 class TestOptunaCompose(AllTypes):
@@ -39,8 +38,7 @@ class TestOptunaCompose(AllTypes):
             optuna_config = OptunaTunerConfig(
                 study_name="Basic Tests", direction="maximize"
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
     def test_hp_one(self, arg_builder):
         assert arg_builder._tune_namespace.HPOne.hp_int.bounds == (20, 200)
@@ -66,8 +64,7 @@ class TestOptunaSample(SampleTypes):
             optuna_config = OptunaTunerConfig(
                 study_name="Sample Tests", direction="maximize"
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
 
 class TestOptunaSaveTopLevel:
@@ -126,8 +123,7 @@ class TestIrisOptuna:
             optuna_config = OptunaTunerConfig(
                 study_name="Iris Logistic Regression Tests", direction="maximize"
             )
-            config = ConfigArgBuilder(LogisticRegressionHP).tuner(optuna_config)
-            return config
+            return ConfigArgBuilder(LogisticRegressionHP).tuner(optuna_config)
 
     def test_iris(self, arg_builder):
         # Load the iris data
@@ -161,7 +157,7 @@ class TestIrisOptuna:
             # object
             tuner_status["study"].tell(tuner_status["trial"], val_acc)
             # Always save the current best set of hyper-parameters
-            arg_builder.save_best(user_specified_path="/tmp", file_name=f"pytest")
+            arg_builder.save_best(user_specified_path="/tmp", file_name="pytest")
             # Verify the sample was written out to file
             yaml_regex = re.compile(
                 fr"pytest.{curr_int_time}.hp.sample.[0-9]+."

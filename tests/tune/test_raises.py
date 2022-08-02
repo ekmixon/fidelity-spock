@@ -19,8 +19,7 @@ class TestWrongPayload:
                 study_name="Basic Tests", direction="maximize"
             )
             with pytest.raises(ValueError):
-                config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-                return config
+                return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
     def test_unknown_class(self, monkeypatch):
         with monkeypatch.context() as m:
@@ -29,8 +28,7 @@ class TestWrongPayload:
                 study_name="Basic Tests", direction="maximize"
             )
             with pytest.raises(TypeError):
-                config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-                return config
+                return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
 
 class TestNoTunerClasses:

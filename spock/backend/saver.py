@@ -158,11 +158,11 @@ class BaseSaver(BaseHandler):  # pylint: disable=too-few-public-methods
             clean_dict: cleaned output payload
 
         """
-        clean_dict = {}
-        for k, v in out_dict.items():
-            if v is not None:
-                clean_dict.update({k: self._recursive_tuple_2_list(v)})
-        return clean_dict
+        return {
+            k: self._recursive_tuple_2_list(v)
+            for k, v in out_dict.items()
+            if v is not None
+        }
 
     def _recursive_tuple_2_list(self, val: Any) -> Any:
         """Recursively find tuples and cast them to lists
@@ -240,9 +240,7 @@ class AttrSaver(BaseSaver):
             k: {ik: vars(iv) for ik, iv in vars(v).items()}
             for k, v in vars(payload).items()
         }
-        # Convert values
-        clean_dict = self._clean_output(out_dict)
-        return clean_dict
+        return self._clean_output(out_dict)
 
     @staticmethod
     def _check_list_of_spock_classes(val: List, key: str, all_cls: Set) -> List:

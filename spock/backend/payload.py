@@ -165,7 +165,7 @@ class BasePayload(BaseHandler):  # pylint: disable=too-few-public-methods
         path: Path,
         payload,
         deps,
-    ):  # pylint: disable=too-many-arguments
+    ):    # pylint: disable=too-many-arguments
         """Handles config composition
 
         For all of the config tags in the config file this function will recursively call the payload function
@@ -197,9 +197,7 @@ class BasePayload(BaseHandler):  # pylint: disable=too-few-public-methods
                 raise RuntimeError(
                     f"Could not find included {config_extension} file {inc_path} or is not an S3 URI!"
                 )
-            included_params.update(
-                self._payload(input_classes, ignore_classes, use_path, deps)
-            )
+            included_params |= self._payload(input_classes, ignore_classes, use_path, deps)
         payload.update(included_params)
         return payload
 
@@ -320,35 +318,32 @@ class AttrPayload(BasePayload):
                                 raise ValueError(
                                     f"Provided an unknown argument named {keys}.{i_keys}"
                                 )
-                    else:
-                        # Check if the key is actually a reference to another class
-                        if keys in class_names:
-                            if isinstance(values, (list, List)):
-                                # Check for incorrect specific override of global def
-                                if keys not in attr_fields:
-                                    raise ValueError(
-                                        f"Referring to a class space {keys} that is undefined"
-                                    )
-                                # We are in a repeated class def
-                                # Raise if the key set is different from the defined set (i.e. incorrect arguments)
-                                key_set = set(
-                                    list(chain(*[list(val.keys()) for val in values]))
-                                )
-                                for i_keys in key_set:
-                                    if i_keys not in attr_fields[keys]:
-                                        raise ValueError(
-                                            f"Provided an unknown argument named {keys}.{i_keys}"
-                                        )
-                            # Chain all the values from multiple spock classes into one list
-                            elif keys not in list(chain(*attr_fields.values())):
+                    elif keys in class_names:
+                        if isinstance(values, (list, List)):
+                            # Check for incorrect specific override of global def
+                            if keys not in attr_fields:
                                 raise ValueError(
-                                    f"Provided an unknown argument named {keys}"
+                                    f"Referring to a class space {keys} that is undefined"
                                 )
+                            # We are in a repeated class def
+                            # Raise if the key set is different from the defined set (i.e. incorrect arguments)
+                            key_set = set(
+                                list(chain(*[list(val.keys()) for val in values]))
+                            )
+                            for i_keys in key_set:
+                                if i_keys not in attr_fields[keys]:
+                                    raise ValueError(
+                                        f"Provided an unknown argument named {keys}.{i_keys}"
+                                    )
                         # Chain all the values from multiple spock classes into one list
                         elif keys not in list(chain(*attr_fields.values())):
                             raise ValueError(
                                 f"Provided an unknown argument named {keys}"
                             )
+                    elif keys not in list(chain(*attr_fields.values())):
+                        raise ValueError(
+                            f"Provided an unknown argument named {keys}"
+                        )
                 if keys in payload and isinstance(values, dict):
                     payload[keys].update(values)
                 else:
@@ -433,17 +428,13 @@ class AttrPayload(BasePayload):
                 and (hasattr(sys.modules["spock"].backend.config, payload[split]))
             ):
                 curr_ref = payload[split]
-            # elif check if it's the last value and figure out the override
             elif idx == (len(key_split) - 1):
                 # Handle bool(s) a bit differently as they are store_true
                 if isinstance(curr_ref, dict) and isinstance(value, bool):
                     if value is not False:
                         curr_ref[split] = value
-                # If we are at the dictionary level we should be able to just payload override
-                elif isinstance(curr_ref, dict) and not isinstance(value, bool):
+                elif isinstance(curr_ref, dict):
                     curr_ref[split] = value
-                # If we are at a list level it must be some form of repeated class since this is the end of the class
-                # tree -- check the instance type but also make sure the cmd-line override is the correct len
                 elif isinstance(curr_ref, list) and len(value) == len(curr_ref):
                     # Walk the list and check for the key
                     for ref_idx, val in enumerate(curr_ref):
@@ -454,7 +445,7 @@ class AttrPayload(BasePayload):
                                 f"cmd-line override failed for {key} -- "
                                 f"Failed to find key {split} within lowest level List[Dict]"
                             )
-                elif isinstance(curr_ref, list) and len(value) != len(curr_ref):
+                elif isinstance(curr_ref, list):
                     raise ValueError(
                         f"cmd-line override failed for {key} -- "
                         f"Specified key {split} with len {len(value)} does not match len {len(curr_ref)} "
@@ -465,7 +456,6 @@ class AttrPayload(BasePayload):
                         f"cmd-line override failed for {key} -- "
                         f"Failed to find key {split} within lowest level Dict"
                     )
-            # If it's not keep walking the current payload
             else:
                 curr_ref = curr_ref[split]
         return payload

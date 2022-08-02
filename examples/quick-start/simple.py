@@ -25,11 +25,10 @@ class BasicConfig:
 def add_namespace(config):
     # Lets just do some basic algebra here
     val_sum = sum(
-        [
-            (config.fancy_parameter * val) + config.fancier_parameter
-            for val in config.most_fancy_parameter
-        ]
+        (config.fancy_parameter * val) + config.fancier_parameter
+        for val in config.most_fancy_parameter
     )
+
     # If the boolean is true let's round
     if config.parameter:
         val_sum = round(val_sum)
@@ -38,7 +37,7 @@ def add_namespace(config):
 
 def add_by_parameter(multiply_param, list_vals, add_param, tf_round):
     # Lets just do some basic algebra here
-    val_sum = sum([(multiply_param * val) + add_param for val in list_vals])
+    val_sum = sum((multiply_param * val) + add_param for val in list_vals)
     # If the boolean is true let's round
     if tf_round:
         val_sum = round(val_sum)

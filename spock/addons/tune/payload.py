@@ -38,29 +38,28 @@ class TunerPayload(BasePayload):
         # Get the ignore fields
         ignore_fields = get_attr_fields(input_classes=ignore_classes)
         for k, v in base_payload.items():
-            if k not in ignore_fields:
-                if k != "config":
-                    # Dict infers that we are overriding a global setting in a specific config
-                    if isinstance(v, dict):
-                        # we're in a namespace
-                        # Check for incorrect specific override of global def
-                        if k not in attr_fields:
-                            raise TypeError(
-                                f"Referring to a class space `{k}` that is undefined"
+            if k not in ignore_fields and k != "config":
+                # Dict infers that we are overriding a global setting in a specific config
+                if isinstance(v, dict):
+                    # we're in a namespace
+                    # Check for incorrect specific override of global def
+                    if k not in attr_fields:
+                        raise TypeError(
+                            f"Referring to a class space `{k}` that is undefined"
+                        )
+                    for i_keys in v.keys():
+                        if i_keys not in attr_fields[k]:
+                            raise ValueError(
+                                f"Provided an unknown argument named `{k}.{i_keys}`"
                             )
-                        for i_keys in v.keys():
-                            if i_keys not in attr_fields[k]:
-                                raise ValueError(
-                                    f"Provided an unknown argument named `{k}.{i_keys}`"
-                                )
-                    if k in payload and isinstance(v, dict):
-                        payload[k].update(v)
-                    else:
-                        payload[k] = v
-                    # Handle tuple conversion here -- lazily
-                    for ik, iv in v.items():
-                        if "bounds" in iv:
-                            iv["bounds"] = tuple(iv["bounds"])
+                if k in payload and isinstance(v, dict):
+                    payload[k].update(v)
+                else:
+                    payload[k] = v
+                # Handle tuple conversion here -- lazily
+                for ik, iv in v.items():
+                    if "bounds" in iv:
+                        iv["bounds"] = tuple(iv["bounds"])
         return payload
 
     @staticmethod
@@ -77,15 +76,13 @@ class TunerPayload(BasePayload):
                 if isinstance(curr_ref, dict) and isinstance(value, bool):
                     if value is not False:
                         curr_ref[split] = value
-                # If we are at the dictionary level we should be able to just payload override
-                elif isinstance(curr_ref, dict) and not isinstance(value, bool):
+                elif isinstance(curr_ref, dict):
                     curr_ref[split] = value
                 else:
                     raise ValueError(
                         f"cmd-line override failed for `{key}` -- "
                         f"Failed to find key `{split}` within lowest level Dict"
                     )
-            # If it's not keep walking the current payload
             else:
                 curr_ref = curr_ref[split]
         return payload

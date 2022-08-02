@@ -129,7 +129,11 @@ class TestClassCmdLineOverride:
         assert arg_builder.NestedListStuff[0].two == "Hooray"
         assert arg_builder.NestedListStuff[1].one == 21
         assert arg_builder.NestedListStuff[1].two == "Working"
-        assert isinstance(arg_builder.SingleNestedConfig.double_nested_config, SecondDoubleNestedConfig) is True
+        assert isinstance(
+            arg_builder.SingleNestedConfig.double_nested_config,
+            SecondDoubleNestedConfig,
+        )
+
         assert arg_builder.SecondDoubleNestedConfig.morph_tolerance == 0.2
         assert arg_builder.TypeConfig.call_me == bar
         assert arg_builder.TypeConfig.call_us[0] == bar
@@ -255,8 +259,11 @@ class TestClassOnlyCmdLine:
         assert arg_builder.TypeConfig.list_choice_p_float == [20.0]
         assert arg_builder.TypeConfig.class_enum.one == 12
         assert arg_builder.TypeConfig.class_enum.two == "ancora"
-        assert isinstance(arg_builder.TypeConfig.high_config.double_nested_config,
-                          SecondDoubleNestedConfig) is True
+        assert isinstance(
+            arg_builder.TypeConfig.high_config.double_nested_config,
+            SecondDoubleNestedConfig,
+        )
+
         assert arg_builder.TypeConfig.high_config.double_nested_config.morph_kernels_thickness == 1
         assert arg_builder.TypeConfig.high_config.double_nested_config.morph_tolerance == 0.1
         assert arg_builder.NestedListStuff[0].one == 11

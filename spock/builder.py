@@ -199,9 +199,9 @@ class ConfigArgBuilder:
         """
         if self._tuner_interface is None:
             raise RuntimeError(
-                f"Called sample method without first calling the tuner method that initializes the "
-                f"backend library"
+                'Called sample method without first calling the tuner method that initializes the backend library'
             )
+
         return_tuple = self._tuner_state
         self._tuner_status = self._tuner_interface.tuner_status
         self._tuner_state = self._tuner_interface.sample()
@@ -221,8 +221,9 @@ class ConfigArgBuilder:
 
         if self._tune_obj is None:
             raise RuntimeError(
-                f"Called tuner method without passing any @spockTuner decorated classes"
+                "Called tuner method without passing any @spockTuner decorated classes"
             )
+
 
         try:
             from spock.addons.tune.tuner import TunerInterface
@@ -305,7 +306,7 @@ class ConfigArgBuilder:
 
         """
         # Gather if all attr backend
-        type_attrs = all([attr.has(arg) for arg in args])
+        type_attrs = all(attr.has(arg) for arg in args)
         if not type_attrs:
             which_idx = [attr.has(arg) for arg in args].index(False)
             if hasattr(args[which_idx], "__name__"):
@@ -359,10 +360,11 @@ class ConfigArgBuilder:
             )
         # If cmd_line is flagged then build the parsers if not make any empty Namespace
         args = (
-            self._build_override_parsers(desc=self._desc)
-            if not self._no_cmd_line
-            else argparse.Namespace(config=[], help=False)
+            argparse.Namespace(config=[], help=False)
+            if self._no_cmd_line
+            else self._build_override_parsers(desc=self._desc)
         )
+
         # If configs are present from the init call then roll these into the namespace
         if self._configs is not None:
             args = self._get_from_kwargs(args, self._configs)
@@ -391,8 +393,7 @@ class ConfigArgBuilder:
         parser = self._builder_obj.build_override_parsers(parser=parser)
         if self._tune_obj is not None:
             parser = self._tune_obj.build_override_parsers(parser=parser)
-        args = parser.parse_args()
-        return args
+        return parser.parse_args()
 
     @staticmethod
     def _get_from_kwargs(args: argparse.Namespace, configs: List):
@@ -436,29 +437,27 @@ class ConfigArgBuilder:
             self._print_usage_and_exit(sys_exit=True, exit_code=0)
         payload = {}
         dependencies = {"paths": [], "rel_paths": [], "roots": []}
-        if payload_obj is not None:
-            # Make sure we are actually trying to map to input classes
-            if len(input_classes) > 0:
-                # If configs are present then iterate through them and deal with the payload
-                if len(self._args.config) > 0:
-                    for configs in self._args.config:
-                        payload_update = payload_obj.payload(
-                            input_classes,
-                            ignore_args,
-                            configs,
-                            self._args,
-                            dependencies,
-                        )
-                        check_payload_overwrite(payload, payload_update, configs)
-                        deep_payload_update(payload, payload_update)
-                # If there are no configs present we have to fall back only on cmd line args to fill out the necessary
-                # data -- this is essentially using spock as a drop in replacement of arg-parser
-                else:
+        if payload_obj is not None and len(input_classes) > 0:
+            # If configs are present then iterate through them and deal with the payload
+            if len(self._args.config) > 0:
+                for configs in self._args.config:
                     payload_update = payload_obj.payload(
-                        input_classes, ignore_args, None, self._args, dependencies
+                        input_classes,
+                        ignore_args,
+                        configs,
+                        self._args,
+                        dependencies,
                     )
-                    check_payload_overwrite(payload, payload_update, None)
+                    check_payload_overwrite(payload, payload_update, configs)
                     deep_payload_update(payload, payload_update)
+            # If there are no configs present we have to fall back only on cmd line args to fill out the necessary
+            # data -- this is essentially using spock as a drop in replacement of arg-parser
+            else:
+                payload_update = payload_obj.payload(
+                    input_classes, ignore_args, None, self._args, dependencies
+                )
+                check_payload_overwrite(payload, payload_update, None)
+                deep_payload_update(payload, payload_update)
         return payload
 
     def _save(
@@ -589,10 +588,10 @@ class ConfigArgBuilder:
         """
         if self._tune_obj is None:
             raise ValueError(
-                f"Called save_best method without passing any @spockTuner decorated classes -- please use the `save()`"
-                f" method for saving non hyper-parameter tuning runs"
+                'Called save_best method without passing any @spockTuner decorated classes -- please use the `save()` method for saving non hyper-parameter tuning runs'
             )
-        file_name = f"hp.best" if file_name is None else f"{file_name}.hp.best"
+
+        file_name = "hp.best" if file_name is None else f"{file_name}.hp.best"
         self._save(
             Spockspace(**vars(self._arg_namespace), **vars(self.best[0])),
             file_name,
@@ -638,7 +637,7 @@ class ConfigArgBuilder:
                     raise _SpockValueError(
                         f"Object is not a @spock decorated class object -- currently `{type(val)}`"
                     )
-                obj_dict.update({type(val).__name__: val})
+                obj_dict[type(val).__name__] = val
         elif _is_spock_instance(obj):
             obj_dict = {type(obj).__name__: obj}
         else:
@@ -874,17 +873,13 @@ class ConfigArgBuilder:
         """
         if key is None:
             key = Fernet.generate_key()
-        # Byte string is assumed to be a direct key
         elif os.path.splitext(key)[1] in {".yaml", ".YAML", ".yml", ".YML"}:
             key = self._handle_yaml_read(
                 key, access="key", s3_config=s3_config, encode=True
             )
-        else:
-            # Byte string is assumed to be a direct key
-            # So only handle the str here
-            if isinstance(key, str):
-                key, _ = env_resolver.resolve(key, str)
-                key = str.encode(key)
+        elif isinstance(key, str):
+            key, _ = env_resolver.resolve(key, str)
+            key = str.encode(key)
         return key
 
     @staticmethod

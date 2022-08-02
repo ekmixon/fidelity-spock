@@ -42,28 +42,23 @@ def _base_attr(cls, kw_only, make_init, dynamic):
         # Get bases minus self and python class object
         bases = list(cls.__mro__[1:-1])
         for idx, base_cls in enumerate(bases):
-            if not _is_spock_instance(base_cls) and not dynamic:
-                raise _SpockUndecoratedClass(
-                    f"Class `{base_cls.__name__}` was not decorated with the @spock decorator "
-                    f"and `dynamic={dynamic}` was set for child class `{cls.__name__}` -- Please remedy one of these"
-                )
-            elif not _is_spock_instance(base_cls) and dynamic:
-                bases[idx] = _process_class(base_cls, kw_only, make_init, dynamic)
+            if not _is_spock_instance(base_cls):
+                if not dynamic:
+                    raise _SpockUndecoratedClass(
+                        f"Class `{base_cls.__name__}` was not decorated with the @spock decorator "
+                        f"and `dynamic={dynamic}` was set for child class `{cls.__name__}` -- Please remedy one of these"
+                    )
+                else:
+                    bases[idx] = _process_class(base_cls, kw_only, make_init, dynamic)
         bases = tuple(bases)
         base_annotation = {}
         for val in bases:
             for attribute in val.__attrs_attrs__:
-                # Since we are moving left to right via the MRO only update if not currently present
-                # this maintains parity to how the MRO is handled in base python
                 if attribute.name not in base_annotation:
                     if "type" in attribute.metadata:
-                        base_annotation.update(
-                            {attribute.name: attribute.metadata["og_type"]}
-                        )
+                        base_annotation[attribute.name] = attribute.metadata["og_type"]
                     else:
-                        base_annotation.update(
-                            {attribute.name: val.__annotations__[attribute.name]}
-                        )
+                        base_annotation[attribute.name] = val.__annotations__[attribute.name]
         base_defaults = {
             attribute.name: attribute.default
             for val in bases
@@ -72,10 +67,10 @@ def _base_attr(cls, kw_only, make_init, dynamic):
         }
     # Merge the annotations -- always override as this is the lowest level of the MRO
     if hasattr(cls, "__annotations__"):
-        new_annotations = {k: v for k, v in cls.__annotations__.items()}
+        new_annotations = dict(cls.__annotations__.items())
     else:
         new_annotations = {}
-    merged_annotations = {**base_annotation, **new_annotations}
+    merged_annotations = base_annotation | new_annotations
 
     # Make a blank attrs dict for new attrs
     attrs_dict = {}
@@ -88,7 +83,7 @@ def _base_attr(cls, kw_only, make_init, dynamic):
             default = base_defaults[k]
         else:
             default = None
-        attrs_dict.update({k: katra(typed=v, default=default)})
+        attrs_dict[k] = katra(typed=v, default=default)
     return bases, attrs_dict, merged_annotations
 
 
@@ -162,7 +157,4 @@ def spock_attr(
     # Note: Taken from dataclass/attr definition(s)
     # maybe_cls's type depends on the usage of the decorator.  It's a class
     # if it's used as `@spock` but ``None`` if used as `@spock()`.
-    if maybe_cls is None:
-        return wrap
-    else:
-        return wrap(maybe_cls)
+    return wrap if maybe_cls is None else wrap(maybe_cls)

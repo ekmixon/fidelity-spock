@@ -26,7 +26,7 @@ class TestConfigDict:
         with monkeypatch.context() as m:
             m.setattr(sys, "argv", ["", "--config", "./tests/conf/yaml/test.yaml"])
             config_dict = ConfigArgBuilder(*all_configs).config_2_dict
-            assert isinstance(config_dict, dict) is True
+            assert isinstance(config_dict, dict)
 
 
 class TestNoCmdLineKwarg(AllTypes):

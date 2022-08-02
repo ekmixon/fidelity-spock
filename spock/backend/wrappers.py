@@ -35,5 +35,4 @@ class Spockspace(argparse.Namespace):
 
     def __iter__(self):
         """Iter for the underlying dictionary"""
-        for k, v in self.__dict__.items():
-            yield k, v
+        yield from self.__dict__.items()

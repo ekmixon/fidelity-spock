@@ -155,7 +155,7 @@ class Graph:
                             f"registered types of sys.modules['spock'].backend.config -- Appending the class "
                             f"`{getattr(sys.modules['spock'].backend.config, cls_name)}` to the SpockBuilder..."
                         )
-                        lazy_parents.update({base.__name__: base})
+                        lazy_parents[base.__name__] = base
         return tuple(lazy_parents.values())
 
     def _build(self) -> Dict:
@@ -190,13 +190,11 @@ class Graph:
         visited = {key: False for key in self.dag.keys()}
         all_nodes = list(visited.keys())
         recursion_stack = {key: False for key in self.dag.keys()}
-        # Recur for all edges
-        for node in all_nodes:
-            if visited.get(node) is False:
-                # Surface the recursive checks
-                if self._cycle_dfs(node, visited, recursion_stack) is True:
-                    return True
-        return False
+        return any(
+            visited.get(node) is False
+            and self._cycle_dfs(node, visited, recursion_stack) is True
+            for node in all_nodes
+        )
 
     def _cycle_dfs(self, node: str, visited: Dict, recursion_stack: Dict) -> bool:
         """DFS via a recursion stack for cycles

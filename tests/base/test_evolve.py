@@ -85,8 +85,9 @@ class TestEvolve:
     def arg_builder(monkeypatch):
         with monkeypatch.context() as m:
             m.setattr(sys, "argv", [""])
-            config = SpockBuilder(EvolveNestedStuff, EvolveNestedListStuff, TypeThinDefaultConfig)
-            return config
+            return SpockBuilder(
+                EvolveNestedStuff, EvolveNestedListStuff, TypeThinDefaultConfig
+            )
 
     def test_evolve(self, arg_builder):
         evolve_nested_stuff = EvolveNestedStuff(
@@ -171,7 +172,7 @@ class TestEvolve:
         )
         # Evolve the class
         new_class = arg_builder.evolve(evolve_nested_stuff, evolve_type_config)
-        assert isinstance(arg_builder.spockspace_2_dict(new_class), dict) is True
+        assert isinstance(arg_builder.spockspace_2_dict(new_class), dict)
 
 
 

@@ -44,6 +44,4 @@ class BasicNet(nn.Module):
         # Layer 3
         # Linear
         x = self.layer_3(x)
-        # Softmax
-        output = self.softmax(x)
-        return output
+        return self.softmax(x)

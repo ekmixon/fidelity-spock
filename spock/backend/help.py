@@ -86,15 +86,13 @@ def match_attribute_docs(attr_name, attr_docs, attr_type_str, attr_default=NOTHI
     # Regex match each value
     a_str = None
     for a_doc in attr_docs:
-        match_re = re.search(r"(?i)^" + attr_name + "?:", a_doc)
-        # Find only the first match -- if more than one than ignore
-        if match_re:
+        if match_re := re.search(f"(?i)^{attr_name}?:", a_doc):
             a_str = a_doc[match_re.end() :].strip()
     return {
         attr_name: {
             "type": attr_type_str,
             "desc": a_str if a_str is not None else "",
-            "default": "(default: " + repr(attr_default) + ")"
+            "default": f"(default: {repr(attr_default)})"
             if type(attr_default).__name__ != "_Nothing"
             else "",
             "len": {"name": len(attr_name), "type": len(attr_type_str)},
@@ -111,8 +109,8 @@ def handle_attributes_print(info_dict, max_indent: int):
 
     """
     # Figure out indents
-    max_param_length = max([len(k) for k in info_dict.keys()])
-    max_type_length = max([v["len"]["type"] for v in info_dict.values()])
+    max_param_length = max(len(k) for k in info_dict.keys())
+    max_type_length = max(v["len"]["type"] for v in info_dict.values())
     # Print akin to the argparser
     for k, v in info_dict.items():
         print(
@@ -174,12 +172,7 @@ def get_from_sys_modules(cls_name):
     module = None
     for idx, val in enumerate(split_string):
         # idx = 0 will always be a call to the sys.modules dict
-        if idx == 0:
-            module = sys.modules[val]
-        # all other idx are paths along the module that need to be traversed
-        # idx = -1 will always be the final Enum object name we want to grab (final getattr call)
-        else:
-            module = getattr(module, val)
+        module = sys.modules[val] if idx == 0 else getattr(module, val)
     return module
 
 
@@ -204,7 +197,7 @@ def handle_help_main(
     for attrs_class in input_classes:
         # Split the docs into class docs and any attribute docs
         class_doc, attr_docs = split_docs(attrs_class)
-        print("  " + attrs_class.__name__ + f" {class_doc}")
+        print(f"  {attrs_class.__name__}" + f" {class_doc}")
         # Keep a running info_dict of all the attribute level info
         info_dict = {}
         for val in attrs_class.__attrs_attrs__:
@@ -218,9 +211,10 @@ def handle_help_main(
                 other_list.extend(nested_others)
             # Get the type represented as a string
             type_string = get_type_string(val, nested_others)
-            info_dict.update(
-                match_attribute_docs(val.name, attr_docs, type_string, val.default)
+            info_dict |= match_attribute_docs(
+                val.name, attr_docs, type_string, val.default
             )
+
         # Add to covered so we don't print help twice in the case of some recursive nesting
         covered_set.add(f"{attrs_class.__module__}.{attrs_class.__name__}")
         handle_attributes_print(info_dict=info_dict, max_indent=max_indent)
@@ -256,21 +250,19 @@ def handle_help_enums(
                 extract_fnc=extract_fnc,
                 max_indent=max_indent,
             )
-        # Fall back to enum style
         else:
             enum = get_from_sys_modules(other)
             # Split the docs into class docs and any attribute docs
             class_doc, attr_docs = split_docs(enum)
-            print("  " + enum.__name__ + f" ({class_doc})")
+            print(f"  {enum.__name__}" + f" ({class_doc})")
             info_dict = {}
             for val in enum:
-                info_dict.update(
-                    match_attribute_docs(
-                        attr_name=val.name,
-                        attr_docs=attr_docs,
-                        attr_type_str=type(val.value).__name__,
-                    )
+                info_dict |= match_attribute_docs(
+                    attr_name=val.name,
+                    attr_docs=attr_docs,
+                    attr_type_str=type(val.value).__name__,
                 )
+
             handle_attributes_print(info_dict=info_dict, max_indent=max_indent)
 
 

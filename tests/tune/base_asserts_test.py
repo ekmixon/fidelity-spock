@@ -52,18 +52,18 @@ class SampleTypes:
         for _ in range(max_draws):
             hp_attrs = arg_builder.sample()
             assert 10 <= hp_attrs.HPOne.hp_int <= 100
-            assert isinstance(hp_attrs.HPOne.hp_int, int) is True
+            assert isinstance(hp_attrs.HPOne.hp_int, int)
             assert 10 <= hp_attrs.HPOne.hp_int_log <= 100
-            assert isinstance(hp_attrs.HPOne.hp_int_log, int) is True
+            assert isinstance(hp_attrs.HPOne.hp_int_log, int)
             assert 10.0 <= hp_attrs.HPOne.hp_float <= 100.0
-            assert isinstance(hp_attrs.HPOne.hp_float, float) is True
+            assert isinstance(hp_attrs.HPOne.hp_float, float)
             assert 10.0 <= hp_attrs.HPOne.hp_float_log <= 100.0
-            assert isinstance(hp_attrs.HPOne.hp_float_log, float) is True
+            assert isinstance(hp_attrs.HPOne.hp_float_log, float)
             assert hp_attrs.HPTwo.hp_choice_int in [10, 20, 40, 80]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_int, int) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_int, int)
             assert hp_attrs.HPTwo.hp_choice_float in [10.0, 20.0, 40.0, 80.0]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_float, float) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_float, float)
             assert hp_attrs.HPTwo.hp_choice_bool in [True, False]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_bool, bool) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_bool, bool)
             assert hp_attrs.HPTwo.hp_choice_str in ["hello", "ciao", "bonjour"]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_str, str) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_str, str)

@@ -211,10 +211,7 @@ class EnvResolver(BaseResolver):
         super(EnvResolver, self).__init__()
 
     def resolve(self, value: Any, value_type: _T) -> Tuple[Any, Optional[str]]:
-        # Check the full regex for a match
-        regex_match = self._check_base_regex(self.FULL_REGEX_OP, value)
-        # if there is a regex match it needs to be handled by the underlying resolver ops
-        if regex_match:
+        if regex_match := self._check_base_regex(self.FULL_REGEX_OP, value):
             # Apply the regex
             env_value, default_value, annotation = self._apply_regex(
                 self.END_REGEX_OP,
@@ -227,7 +224,6 @@ class EnvResolver(BaseResolver):
             maybe_env = self._get_from_env(default_value, env_value)
             # Attempt to cast the value to its underlying type
             typed_env = self._attempt_cast(maybe_env, value_type, env_value)
-        # Else just pass through
         else:
             typed_env = value
             annotation = None
@@ -297,8 +293,7 @@ class CryptoResolver(BaseResolver):
         self._key = key
 
     def resolve(self, value: Any, value_type: _T) -> Tuple[Any, Optional[str]]:
-        regex_match = self._check_base_regex(self.FULL_REGEX_OP, value)
-        if regex_match:
+        if regex_match := self._check_base_regex(self.FULL_REGEX_OP, value):
             crypto_value, default_value, annotation = self._apply_regex(
                 self.END_REGEX_OP,
                 self.CLIP_REGEX_OP,
@@ -311,7 +306,6 @@ class CryptoResolver(BaseResolver):
                 decrypted_value, value_type, crypto_value
             )
             annotation = "crypto"
-        # Pass through
         else:
             typed_decrypted = value
             annotation = None

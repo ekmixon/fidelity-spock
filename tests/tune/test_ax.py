@@ -29,8 +29,7 @@ class TestAxBasic(AllTypes):
                 objective_name="None",
                 verbose_logging=False,
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
 
 
 class TestAxCompose(AllTypes):
@@ -47,8 +46,7 @@ class TestAxCompose(AllTypes):
                 objective_name="None",
                 verbose_logging=False,
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
 
     def test_hp_one(self, arg_builder):
         assert arg_builder._tune_namespace.HPOne.hp_int.bounds == (20, 200)
@@ -77,8 +75,7 @@ class TestAxSample(SampleTypes):
                 objective_name="None",
                 verbose_logging=False,
             )
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(ax_config)
 
 
 class TestAxSaveTopLevel:
@@ -141,8 +138,7 @@ class TestIrisAx:
                 minimize=False,
                 objective_name="accuracy",
             )
-            config = ConfigArgBuilder(LogisticRegressionHP).tuner(ax_config)
-            return config
+            return ConfigArgBuilder(LogisticRegressionHP).tuner(ax_config)
 
     def test_iris(self, arg_builder):
         # Load the iris data
@@ -180,7 +176,7 @@ class TestIrisAx:
                 raw_data={"accuracy": (val_acc, 0.0)},
             )
             # Always save the current best set of hyper-parameters
-            arg_builder.save_best(user_specified_path="/tmp", file_name=f"pytest")
+            arg_builder.save_best(user_specified_path="/tmp", file_name="pytest")
             # Verify the sample was written out to file
             yaml_regex = re.compile(
                 fr"pytest.{curr_int_time}.hp.sample.[0-9]+."

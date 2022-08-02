@@ -60,8 +60,7 @@ class SpockArguments:
             current key for the _arguments dictionary
 
         """
-        for key in self._arguments:
-            yield key
+        yield from self._arguments
 
     @property
     def items(self):
@@ -185,8 +184,8 @@ class SpockArguments:
             clean dictionary of parameters not at the general level
 
         """
-        clean_arguments = {}
-        for arg, value in arguments.items():
-            if arg not in general_arguments:
-                clean_arguments[arg] = value
-        return clean_arguments
+        return {
+            arg: value
+            for arg, value in arguments.items()
+            if arg not in general_arguments
+        }

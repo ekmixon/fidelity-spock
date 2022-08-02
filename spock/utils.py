@@ -189,7 +189,7 @@ def within(
     # Skip if None and allowed
     if allow_optional and val is None:
         pass
-    elif val is None and not allow_optional:
+    elif val is None:
         raise _SpockValueError(
             f"Set value is None and allow_optional is `{allow_optional}`"
         )
@@ -221,7 +221,7 @@ def ge(
     # Skip if None and allowed
     if allow_optional and val is None:
         pass
-    elif val is None and not allow_optional:
+    elif val is None:
         raise _SpockValueError(
             f"Set value is None and allow_optional is `{allow_optional}`"
         )
@@ -252,7 +252,7 @@ def gt(
     # Skip if None and allowed
     if allow_optional and val is None:
         pass
-    elif val is None and not allow_optional:
+    elif val is None:
         raise _SpockValueError(
             f"Set value is None and allow_optional is `{allow_optional}`"
         )
@@ -283,7 +283,7 @@ def le(
     # Skip if None and allowed
     if allow_optional and val is None:
         pass
-    elif val is None and not allow_optional:
+    elif val is None:
         raise _SpockValueError(
             f"Set value is None and allow_optional is `{allow_optional}`"
         )
@@ -314,7 +314,7 @@ def lt(
     # Skip if None and allowed
     if allow_optional and val is None:
         pass
-    elif val is None and not allow_optional:
+    elif val is None:
         raise _SpockValueError(
             f"Set value is None and allow_optional is `{allow_optional}`"
         )
@@ -390,7 +390,7 @@ def path_object_to_s3path(path: Path) -> str:
         string of s3 path
 
     """
-    return path.parts[0] + "//" + "/".join(path.parts[1:])
+    return f"{path.parts[0]}//" + "/".join(path.parts[1:])
 
 
 def check_path_s3(path: Path) -> bool:
@@ -448,7 +448,7 @@ def _check_iterable(iter_obj: Union[Tuple, List, EnumMeta]) -> bool:
         boolean if the iterable contains at least one spock class
 
     """
-    return any([_is_spock_instance(v.value) for v in iter_obj])
+    return any(_is_spock_instance(v.value) for v in iter_obj)
 
 
 def make_argument(
@@ -692,8 +692,7 @@ def deep_payload_update(source: Dict, updates: Dict) -> Dict:
     for k, v in updates.items():
         if isinstance(v, (dict, Dict)) and v:
             source_dict = {} if source.get(k) is None else source.get(k)
-            updated_dict = deep_payload_update(source_dict, v)
-            if updated_dict:
+            if updated_dict := deep_payload_update(source_dict, v):
                 source[k] = updated_dict
         else:
             source[k] = v
@@ -715,13 +714,12 @@ def check_payload_overwrite(
     """
     for k, v in updates.items():
         if isinstance(v, dict) and v:
-            overwrite += k + ":"
+            overwrite += f"{k}:"
             current_payload = {} if payload.get(k) is None else payload.get(k)
             check_payload_overwrite(current_payload, v, configs, overwrite=overwrite)
-        else:
-            if k in payload:
-                warn(
-                    f"Overriding an already set parameter {overwrite + k} from {configs}\n"
-                    f"Be aware that value precedence is set by the order of the config files (last to load)...",
-                    SyntaxWarning,
-                )
+        elif k in payload:
+            warn(
+                f"Overriding an already set parameter {overwrite + k} from {configs}\n"
+                f"Be aware that value precedence is set by the order of the config files (last to load)...",
+                SyntaxWarning,
+            )

@@ -175,13 +175,12 @@ class RegisterFieldTemplate(ABC):
     def _handle_crypto_annotations(
         attr_space: AttributeSpace, annotation: str, og_value: str
     ):
-        if annotation == "crypto":
-            attr_space.annotations = og_value
-            attr_space.crypto = True
-        else:
+        if annotation != "crypto":
             raise _SpockInstantiationError(
                 f"Got unknown crypto annotation `{annotation}`"
             )
+        attr_space.annotations = og_value
+        attr_space.crypto = True
 
     @abstractmethod
     def handle_optional_attribute_type(
@@ -462,22 +461,22 @@ class RegisterGenericAliasCallableField(RegisterFieldTemplate):
         typed = attr_space.attribute.metadata["type"]
         out = None
         # Handle List Types
-        if (
-            _get_name_py_version(typed) == "List"
-            or _get_name_py_version(typed) == "Tuple"
-        ):
-            out = []
-            for v in builder_space.arguments[attr_space.config_space.name][
-                attr_space.attribute.name
-            ]:
-                out.append(_recurse_callables(v, _str_2_callable))
-        # Handle Dict Types
+        if _get_name_py_version(typed) in ["List", "Tuple"]:
+            out = [
+                _recurse_callables(v, _str_2_callable)
+                for v in builder_space.arguments[attr_space.config_space.name][
+                    attr_space.attribute.name
+                ]
+            ]
+
         elif _get_name_py_version(typed) == "Dict":
-            out = {}
-            for k, v in builder_space.arguments[attr_space.config_space.name][
-                attr_space.attribute.name
-            ].items():
-                out.update({k: _recurse_callables(v, _str_2_callable)})
+            out = {
+                k: _recurse_callables(v, _str_2_callable)
+                for k, v in builder_space.arguments[attr_space.config_space.name][
+                    attr_space.attribute.name
+                ].items()
+            }
+
         attr_space.field = out
 
     def handle_optional_attribute_type(
@@ -589,9 +588,8 @@ class RegisterSimpleField(RegisterFieldTemplate):
         if (
             "special_key" in attr_space.attribute.metadata
             and attr_space.attribute.metadata["special_key"] is not None
-        ):
-            if attr_space.field is not None:
-                self.special_keys["save_path"] = attr_space.field
+        ) and attr_space.field is not None:
+            self.special_keys["save_path"] = attr_space.field
 
 
 class RegisterTuneCls(RegisterFieldTemplate):
@@ -776,22 +774,22 @@ class RegisterSpockCls(RegisterFieldTemplate):
         """
         out = False
         if hasattr(typed, "__args__"):
-            if (
-                _get_name_py_version(typed) == "List"
-                or _get_name_py_version(typed) == "Tuple"
-            ):
+            if _get_name_py_version(typed) in ["List", "Tuple"]:
                 # Possibly nested Callables
-                if not isinstance(typed.__args__[0], _SpockVariadicGenericAlias):
-                    out = cls._find_callables(typed.__args__[0])
-                # Found callables
-                elif isinstance(typed.__args__[0], _SpockVariadicGenericAlias):
-                    out = True
+                out = (
+                    True
+                    if isinstance(typed.__args__[0], _SpockVariadicGenericAlias)
+                    else cls._find_callables(typed.__args__[0])
+                )
+
             elif _get_name_py_version(typed) == "Dict":
                 key_type, value_type = typed.__args__
-                if not isinstance(value_type, _SpockVariadicGenericAlias):
-                    out = cls._find_callables(value_type)
-                elif isinstance(value_type, _SpockVariadicGenericAlias):
-                    out = True
+                out = (
+                    True
+                    if isinstance(value_type, _SpockVariadicGenericAlias)
+                    else cls._find_callables(value_type)
+                )
+
             else:
                 raise TypeError(
                     f"Unexpected type of `{str(typed)}` when attempting to handle GenericAlias types"
@@ -860,10 +858,10 @@ class RegisterSpockCls(RegisterFieldTemplate):
                 handler = RegisterSimpleField(salt, key)
 
             handler(attr_space, builder_space)
-            special_keys.update(handler.special_keys)
+            special_keys |= handler.special_keys
             # Handle annotations by attaching them to a dictionary
             if attr_space.annotations is not None:
-                annotations.update({attr_space.attribute.name: attr_space.annotations})
+                annotations[attr_space.attribute.name] = attr_space.annotations
             if attr_space.crypto:
                 crypto = True
 
@@ -871,7 +869,7 @@ class RegisterSpockCls(RegisterFieldTemplate):
         # error on instantiation
         try:
             # If there are annotations attach them to the spock class in the __resolver__ attribute
-            if len(annotations) > 0:
+            if annotations:
                 spock_cls.__resolver__ = annotations
             if crypto:
                 spock_cls.__crypto__ = True

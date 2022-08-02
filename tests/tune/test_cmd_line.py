@@ -38,8 +38,7 @@ class TestOptunaCmdLineOverride:
                 ],
             )
             optuna_config = OptunaTunerConfig(study_name="Tests", direction="maximize")
-            config = ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
-            return config
+            return ConfigArgBuilder(HPOne, HPTwo).tuner(optuna_config)
 
     def test_hp_one(self, arg_builder):
         assert arg_builder._tune_namespace.HPOne.hp_int.bounds == (1, 1000)
@@ -82,19 +81,19 @@ class TestOptunaCmdLineOverride:
         for _ in range(100):
             hp_attrs = arg_builder.sample()
             assert 1 <= hp_attrs.HPOne.hp_int <= 1000
-            assert isinstance(hp_attrs.HPOne.hp_int, int) is True
+            assert isinstance(hp_attrs.HPOne.hp_int, int)
             assert 1 <= hp_attrs.HPOne.hp_int_log <= 1000
-            assert isinstance(hp_attrs.HPOne.hp_int_log, int) is True
+            assert isinstance(hp_attrs.HPOne.hp_int_log, int)
             assert 1.0 <= hp_attrs.HPOne.hp_float <= 1000.0
-            assert isinstance(hp_attrs.HPOne.hp_float, float) is True
+            assert isinstance(hp_attrs.HPOne.hp_float, float)
             assert 1.0 <= hp_attrs.HPOne.hp_float_log <= 1000.0
-            assert isinstance(hp_attrs.HPOne.hp_float_log, float) is True
+            assert isinstance(hp_attrs.HPOne.hp_float_log, float)
             assert hp_attrs.HPTwo.hp_choice_int in [1, 2, 4, 8]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_int, int) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_int, int)
             assert hp_attrs.HPTwo.hp_choice_float in [1.0, 2.0, 4.0, 8.0]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_float, float) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_float, float)
             assert hp_attrs.HPTwo.hp_choice_bool in [True, False]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_bool, bool) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_bool, bool)
             assert hp_attrs.HPTwo.hp_choice_str in [
                 "is",
                 "it ",
@@ -103,4 +102,4 @@ class TestOptunaCmdLineOverride:
                 "looking",
                 "for",
             ]
-            assert isinstance(hp_attrs.HPTwo.hp_choice_str, str) is True
+            assert isinstance(hp_attrs.HPTwo.hp_choice_str, str)

@@ -47,7 +47,7 @@ def _str_2_callable(val: str, **kwargs):
         _SpockValueError
 
     """
-    str_field = str(val)
+    str_field = val
     module, fn = str_field.rsplit(".", 1)
     try:
         call_ref = getattr(importlib.import_module(module), fn)
@@ -94,20 +94,19 @@ def _recurse_callables(val: _T, fnc: Callable, check_type: Type = str):
                 out.append(_recurse_callables(v, fnc, check_type))
             else:
                 out.append(fnc(v))
-        out = type(val)(out)
+        return type(val)(out)
     elif isinstance(val, (dict, Dict)):
-        out = {}
-        for k, v in val.items():
-            if isinstance(val, (list, List, tuple, Tuple, dict, Dict)):
-                out.update({k: _recurse_callables(v, fnc, check_type)})
-            else:
-                out.update({k: fnc(v)})
+        return {
+            k: _recurse_callables(v, fnc, check_type)
+            if isinstance(val, (list, List, tuple, Tuple, dict, Dict))
+            else fnc(v)
+            for k, v in val.items()
+        }
+
     elif isinstance(val, check_type):
-        out = fnc(val)
-    # Fall back to just passing the unmodified value back
+        return fnc(val)
     else:
-        out = val
-    return out
+        return val
 
 
 def _get_name_py_version(typed: _T):
@@ -152,13 +151,12 @@ def get_type_fields(input_classes: List):
     # Parse out the types if generic
     type_fields = {}
     for attr in input_classes:
-        input_attr = {}
-        for val in attr.__attrs_attrs__:
-            if "type" in val.metadata:
-                input_attr.update({val.name: val.metadata["type"]})
-            else:
-                input_attr.update({val.name: None})
-        type_fields.update({attr.__name__: input_attr})
+        input_attr = {
+            val.name: val.metadata["type"] if "type" in val.metadata else None
+            for val in attr.__attrs_attrs__
+        }
+
+        type_fields[attr.__name__] = input_attr
     return type_fields
 
 
@@ -179,7 +177,7 @@ def flatten_type_dict(type_dict: Dict):
             return_dict = flatten_type_dict(
                 v,
             )
-            flat_dict.update(return_dict)
+            flat_dict |= return_dict
         else:
             flat_dict[k] = v
     return flat_dict
@@ -229,13 +227,10 @@ def convert_to_tuples(
             if isinstance(v, (dict, Dict, list, List, tuple, Tuple)):
                 # We've hit a fundamental declared type -- recurse via type checking
                 if k in flat_type_dict:
-                    updated = _recursive_list_to_tuple(
+                    if updated := _recursive_list_to_tuple(
                         k, v, flat_type_dict[k], class_names
-                    )
-                    if updated:
-                        updated_dict.update({k: updated})
-                # Have to handle this specifically -- this is lists of spock classes
-                # here we need to update a list instead of the dict directly
+                    ):
+                        updated_dict[k] = updated
                 elif isinstance(v, (list, List)) and k in class_names:
                     updated_list = []
                     # Iterate over list of classes
@@ -244,17 +239,13 @@ def convert_to_tuples(
                             val, base_type_dict, flat_type_dict, class_names
                         )
                         updated_list.append(updated)
-                    updated_dict.update({k: updated_list})
-                # Keep recursing through the structure
-                else:
-                    updated = convert_to_tuples(
-                        v, base_type_dict, flat_type_dict, class_names
-                    )
-                    if updated:
-                        updated_dict.update({k: updated})
-            # If there is no nested structure then just map
+                    updated_dict[k] = updated_list
+                elif updated := convert_to_tuples(
+                    v, base_type_dict, flat_type_dict, class_names
+                ):
+                    updated_dict[k] = updated
             else:
-                updated_dict.update({k: v})
+                updated_dict[k] = v
     return updated_dict
 
 
@@ -274,8 +265,7 @@ def deep_update(source: Dict, updates: Dict):
     """
     for k, v in updates.items():
         if isinstance(v, (dict, Dict)) and v:
-            updated_dict = deep_update(source.get(k), v)
-            if updated_dict:
+            if updated_dict := deep_update(source.get(k), v):
                 source[k] = updated_dict
         else:
             source[k] = v
@@ -298,40 +288,38 @@ def _recursive_list_to_tuple(key: str, value: Any, typed: _T, class_names: List)
         value: updated value with correct type casts
 
     """
-    # Check for __args__ as it signifies a generic and make sure it's not already been cast as a tuple
-    # from a composed payload
     if (
-        hasattr(typed, "__args__")
-        and not isinstance(value, tuple)
-        and not (isinstance(value, str) and value in class_names)
-        and not isinstance(typed, _SpockVariadicGenericAlias)
+        not hasattr(typed, "__args__")
+        or isinstance(value, tuple)
+        or isinstance(value, str)
+        and value in class_names
+        or isinstance(typed, _SpockVariadicGenericAlias)
     ):
-        # Force those with origin tuple types to be of the defined length
-        # Here check for tuple and check length
-        if (typed.__origin__ in (tuple, Tuple)) and len(value) != len(typed.__args__):
-            raise ValueError(
-                f"Tuple(s) are of a defined length -- For parameter {key} the length of the provided argument "
-                f"({len(value)}) does not match the length of the defined argument ({len(typed.__args__)})"
-            )
-        # need to recurse before casting as we can't set values in a tuple with idx
-        # Since it's generic it should be iterable  -- thus recurse and check its children
-        if isinstance(value, (list, List)):
-            # Then we continue to recurse
-            # Iterate the list type and recurse call
-            for idx, val in _get_iter(value):
-                value[idx] = _recursive_list_to_tuple(
-                    key, val, typed.__args__[0], class_names
-                )
-        elif isinstance(value, (dict, Dict)):
-            # Iterate the dict type and recurse call
-            for k, v in _get_iter(value):
-                key_type, val_type = typed.__args__
-                value[k] = _recursive_list_to_tuple(key, v, val_type, class_names)
-        # We need to catch the mismatch if the current type is list and the given type is Tuple
-        # First check if list and then swap to tuple if the origin is tuple -- only do this on the bubble up since
-        # we can't assign by idx once we change to Tuple
-        if isinstance(value, (list, List)) and typed.__origin__ in (tuple, Tuple):
-            value = tuple(value)
-    else:
         return value
+    # Force those with origin tuple types to be of the defined length
+    # Here check for tuple and check length
+    if (typed.__origin__ in (tuple, Tuple)) and len(value) != len(typed.__args__):
+        raise ValueError(
+            f"Tuple(s) are of a defined length -- For parameter {key} the length of the provided argument "
+            f"({len(value)}) does not match the length of the defined argument ({len(typed.__args__)})"
+        )
+    # need to recurse before casting as we can't set values in a tuple with idx
+    # Since it's generic it should be iterable  -- thus recurse and check its children
+    if isinstance(value, (list, List)):
+        # Then we continue to recurse
+        # Iterate the list type and recurse call
+        for idx, val in _get_iter(value):
+            value[idx] = _recursive_list_to_tuple(
+                key, val, typed.__args__[0], class_names
+            )
+    elif isinstance(value, (dict, Dict)):
+        # Iterate the dict type and recurse call
+        for k, v in _get_iter(value):
+            key_type, val_type = typed.__args__
+            value[k] = _recursive_list_to_tuple(key, v, val_type, class_names)
+    # We need to catch the mismatch if the current type is list and the given type is Tuple
+    # First check if list and then swap to tuple if the origin is tuple -- only do this on the bubble up since
+    # we can't assign by idx once we change to Tuple
+    if isinstance(value, (list, List)) and typed.__origin__ in (tuple, Tuple):
+        value = tuple(value)
     return value
